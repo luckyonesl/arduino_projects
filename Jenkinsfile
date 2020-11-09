@@ -21,7 +21,8 @@ pipeline {
             steps {
                 echo 'Flash....'
 		//unstash 'arduino'
-		sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli'
+		sh label: 'arduino new sketch', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli sketch new HelloWorld'
+		sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v upload --fqbn "esp8266:esp8266:d1_mini_pro" -p /dev/ttyUSB0 HelloWorld'
             }
         }
     }
