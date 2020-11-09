@@ -5,6 +5,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building..'
+		sh label: 'arduino', returnStatus: true, script: 'arduino-cli -v compile --fqbn "esp8266:esp8266:d1_mini_pro" easyexample_master'
             }
         }
         stage('Test') {
