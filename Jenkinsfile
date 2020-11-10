@@ -6,6 +6,7 @@ pipeline {
 	   //agent { label 'ardoinocli' }
            steps {
               echo 'Building..'
+              sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli core install esp8266:esp8266'
               sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli lib install PubSubClient RTCVars Ticker "BlueDot BME280 Library"'
 	      sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v compile --fqbn "esp8266:esp8266:d1_mini_pro" easyexample_master'
 	      //stash the result
