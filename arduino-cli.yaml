@@ -1,0 +1,38 @@
+board_manager:
+  additional_urls:
+  - https://arduino.esp8266.com/stable/package_esp8266com_index.json
+daemon:
+  port: "50051"
+directories:
+  data: ./.arduino15
+  downloads: ./.arduino15/staging
+  user: ./Arduino
+logging:
+  file: ""
+  format: text
+  level: info
+sketch:
+  always_export_binaries: false
+telemetry:
+  addr: :9090
+  enabled: true
+jenkins-slave@eecb37f84fee:~/foo$ cat arduino-cli.yaml 
+board_manager:
+  additional_urls:
+  - https://arduino.esp8266.com/stable/package_esp8266com_index.json
+daemon:
+  port: "50051"
+directories:
+  data: ./.arduino15
+  downloads: ./.arduino15/staging
+  user: ./Arduino
+logging:
+  file: ""
+  format: text
+  level: info
+sketch:
+  always_export_binaries: false
+telemetry:
+  addr: :9090
+  enabled: true
+
