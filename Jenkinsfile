@@ -28,7 +28,7 @@ pipeline {
 		//unstash 'arduino'
 		//sh label: 'arduino new sketch', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli sketch new HelloWorld'
 		//sh label: 'arduino compile', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v compile --fqbn "esp8266:esp8266:d1_mini_pro" -p /dev/ttyUSB0 HelloWorld'
-		//sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v upload --fqbn "esp8266:esp8266:d1_mini_pro" -p /dev/ttyUSB0 HelloWorld'
+		sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v upload --fqbn "esp8266:esp8266:d1_mini_pro" -p /dev/ttyUSB0 easyexample_master'
             }
         }
     }
