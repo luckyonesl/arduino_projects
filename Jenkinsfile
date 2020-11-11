@@ -15,7 +15,7 @@ pipeline {
 		sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v compile --build-path ${WORKSPACE}/target/ --fqbn "esp8266:esp8266:d1_mini_pro" easyexample_master'
 	      //stash the result
 	      //stash includes: '/home/jenkins-slave/.arduino15/*', name: 'arduino'
-	      stash includes: '**/*', name: 'arduino'
+	      stash includes: '**/*.bin', name: 'arduino'
            }
         }
         stage('Test') {
@@ -29,7 +29,7 @@ pipeline {
                 echo 'Flash....'
 		unstash 'arduino'
                 //sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli core install esp8266:esp8266'
-		sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v upload --build-path ${WORKSPACE}/target/ --fqbn "esp8266:esp8266:d1_mini_pro" -p /dev/ttyUSB0 easyexample_master'
+		sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v upload -i target/easyexample_master.ino.bin --fqbn "esp8266:esp8266:d1_mini_pro" -p /dev/ttyUSB0'
             }
         }
     }
