@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+    options {
+       options { preserveStashes(buildCount: 5) } 
+    }
     stages {
         stage('Build') {
 	   //agent { label 'ardoinocli' }
