@@ -7,7 +7,7 @@ pipeline {
         stage('Build') {
            steps {
                 echo 'Building..'
-		withDockerContainer('arduinocli:3') {
+		dockerNode(connector: attach(user: 'jenkins-slave'), dockerHost: 'unix:///Users/stefan/Library/Containers/com.docker.docker/Data/docker.raw.sock', image: 'arduinocli:3', remoteFs: '/home/jenkins-slave/') {
     			// some block
 	      		sh label: 'arduino copy board', returnStatus: true, script: 'cp -r ~/Arduino .'
 			sh label: 'arduino copy libs', returnStatus: true, script: 'cp -r ~/.arduino15 .'
