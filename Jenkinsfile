@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label'DOCKEREXECUTER' }
     options {
        preserveStashes(buildCount: 5)
     }
@@ -7,7 +7,7 @@ pipeline {
         stage('Build') {
            steps {
                 echo 'Building..'
-		withDockerContainer('arduino:3') {
+		withDockerContainer('arduinocli:3') {
     			// some block
 	      		sh label: 'arduino copy board', returnStatus: true, script: 'cp -r ~/Arduino .'
 			sh label: 'arduino copy libs', returnStatus: true, script: 'cp -r ~/.arduino15 .'
