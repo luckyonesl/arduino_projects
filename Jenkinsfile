@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'DOCKEREXECUTER' }
     options {
        preserveStashes(buildCount: 5)
     }
