@@ -1,11 +1,10 @@
 pipeline {
-    agent { label 'DOCKEREXECUTER' }
+    agent none
     options {
        preserveStashes(buildCount: 5)
     }
     stages {
         stage('Build') {
-           steps {
                 echo 'Building..'
             	agent {
                 	docker { image 'cicd_arduinocli:latest' }
