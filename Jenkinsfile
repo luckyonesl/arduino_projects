@@ -1,5 +1,5 @@
 pipeline {
-    agent { label'DOCKEREXECUTER' }
+    agent { any }
     options {
        preserveStashes(buildCount: 5)
     }
@@ -7,7 +7,7 @@ pipeline {
         stage('Build') {
            steps {
                 echo 'Building..'
-		dockerNode(connector: attach(user: 'jenkins-slave'), dockerHost: 'unix:///Users/stefan/Library/Containers/com.docker.docker/Data/docker.raw.sock', image: 'arduinocli:3', remoteFs: '/home/jenkins-slave/') {
+		dockerNode(connector: attach(user: 'jenkins-slave'), dockerHost: 'cicd_arduinocli:latest', image: 'cicd_arduinocli:latest', remoteFs: '/home/jenkins-slave/') {
     			// some block
 	      		sh label: 'arduino copy board', returnStatus: true, script: 'cp -r ~/Arduino .'
 			sh label: 'arduino copy libs', returnStatus: true, script: 'cp -r ~/.arduino15 .'
