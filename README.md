@@ -1,3 +1,4 @@
-#arduino projects
+# arduino projects
 
-all projects are on branchesi following the names myproject_<branch>
+all projects are on branches following the names myproject_<branch>
+
