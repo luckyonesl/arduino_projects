@@ -1,5 +1,8 @@
 pipeline {
     agent { label 'DOCKEREXECUTER' }
+    options {
+       preserveStashes(buildCount: 5)
+    }
     stages {
       stage('Build') {
             agent {
