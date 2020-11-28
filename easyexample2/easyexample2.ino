@@ -1,37 +1,52 @@
-/*
-  Blink
+#include <Ticker.h>
+Ticker flipper;
+long blink_count;
 
-  Turns an LED on for one second, then off for one second, repeatedly.
+void flip()
+{
+  int state = digitalRead(LED_BUILTIN);  
+  digitalWrite(LED_BUILTIN, !state);    
+  if ( blink_count <= 0 )
+  {
+    flipper.detach();
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
+  blink_count--;
+}
 
-  Most Arduinos have an on-board LED you can control. On the UNO, MEGA and ZERO
-  it is attached to digital pin 13, on MKR1000 on pin 6. LED_BUILTIN is set to
-  the correct LED pin independent of which board is used.
-  If you want to know what pin the on-board LED is connected to on your Arduino
-  model, check the Technical Specs of your board at:
-  https://www.arduino.cc/en/Main/Products
+void blink_now(float interval, int count )
+{
+  //we use the ticker no blocking
+  blink_count = count;
+  flipper.attach(interval, flip);
+  while (blink_count > 0)
+  {
+    delay(5000);
+    Serial.println(blink_count);
+  }
+}
 
-  modified 8 May 2014
-  by Scott Fitzgerald
-  modified 2 Sep 2016
-  by Arturo Guadalupi
-  modified 8 Sep 2016
-  by Colby Newman
 
-  This example code is in the public domain.
-
-  http://www.arduino.cc/en/Tutorial/Blink
-*/
 
 // the setup function runs once when you press reset or power the board
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
+  //if i enter i set it to low
+  digitalWrite(LED_BUILTIN, LOW);
+  Serial.begin(74880); // Aufbau einer seriellen Verbindung
+  Serial.setTimeout(2000);
+  while (!Serial) {};
+  blink_now(0.1, 10);
 }
 
 // the loop function runs over and over again forever
 void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(1000);                       // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-  delay(1000);                       // wait for a second
+   //
+   while (blink_count > 0 )
+   {
+      Serial.println("still blinking");
+      delay(500);
+   }
+   ESP.deepSleep(4e6);
 }
