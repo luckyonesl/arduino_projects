@@ -1,5 +1,6 @@
-#include "SPIFFS.h" 
-
+//#include "SPIFFS.h"
+//for esp8266 
+#include "FS.h"
 void setup() {
   Serial.begin(74880); // Aufbau einer seriellen Verbindung
   Serial.setTimeout(2000);
