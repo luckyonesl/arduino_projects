@@ -14,7 +14,7 @@ pipeline {
             steps {
                sh label: 'arduino copy board', returnStatus: true, script: 'cp -r /home/jenkins-slave/Arduino .'
                sh label: 'arduino copy libs', returnStatus: true, script: 'cp -r  /home/jenkins-slave/.arduino15 .'
-               sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v compile --build-path ${WORKSPACE}/target/ --fqbn "esp8266:esp8266:d1_mini_pro" examplemq7-gas'
+               sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v compile --build-path ${WORKSPACE}/target/ --fqbn "esp8266:esp8266:d1_mini_pro" fsexample'
                stash includes: '**/*.bin', name: 'arduino'
             }
       }
@@ -24,7 +24,7 @@ pipeline {
                echo 'Flash....'
 		         unstash 'arduino'
                sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli core install esp8266:esp8266'
-		         sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v upload -i target/examplemq7-gas.ino.bin --fqbn "esp8266:esp8266:d1_mini_pro" -p /dev/ttyUSB0'
+		         sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-cli -v upload -i target/fsexample.ino.bin --fqbn "esp8266:esp8266:d1_mini_pro" -p /dev/ttyUSB0'
             }
       }
     }
