@@ -1,9 +1,14 @@
 //#include "SPIFFS.h"
 //for esp8266 
 #include "FS.h"
+int Reset = 4;
+
 void setup() {
   Serial.begin(74880); // Aufbau einer seriellen Verbindung
   Serial.setTimeout(2000);
+  digitalWrite(Reset, HIGH);
+  delay(200); 
+  pinMode(Reset, OUTPUT);  
   while (!Serial) {};
   if(!SPIFFS.begin()){ 
     Serial.println("An Error has occurred while mounting SPIFFS");  
@@ -45,5 +50,7 @@ void loop() {
    Serial.print(usedBytes);
    Serial.println("byte");
 */
+   Serial.println("===== in loop =====");
    delay(1000);
+   digitalWrite(Reset, LOW);
 }
