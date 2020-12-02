@@ -51,6 +51,6 @@ void loop() {
    Serial.println("byte");
 */
    Serial.println("===== in loop =====");
-   delay(1000);
+   delay(10000);
    digitalWrite(Reset, LOW);
 }
