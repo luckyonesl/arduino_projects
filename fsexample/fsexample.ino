@@ -20,7 +20,7 @@ void setup() {
    }
   
   //write to file
-   file = SPIFFS.open("/test.txt", "a");
+   File file = SPIFFS.open("/test.txt", "a");
    if(!file){
       // File not found
       Serial.println("Failed to open test file");
@@ -33,7 +33,7 @@ void setup() {
 
 // the loop function runs over and over again forever
 void loop() {
-   unsigned int totalBytes = SPIFFS.totalBytes();
+   /*unsigned int totalBytes = SPIFFS.totalBytes();
    unsigned int usedBytes = SPIFFS.usedBytes();
    Serial.println("===== File system info =====");
  
@@ -44,6 +44,6 @@ void loop() {
    Serial.print("Total space used: ");
    Serial.print(usedBytes);
    Serial.println("byte");
-
+*/
    delay(1000);
 }
