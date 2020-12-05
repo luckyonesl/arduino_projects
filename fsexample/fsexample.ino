@@ -32,7 +32,7 @@ void setup() {
     Serial.println("Failed to open test file");
     return;
   } else {
-    int bytesWritten = file.println("Hello From ESP32");
+    int bytesWritten = file.println("Hello From ESP8266");
     file.close();
     Serial.println("File was written");
     Serial.println(bytesWritten);
