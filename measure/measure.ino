@@ -16,18 +16,20 @@ char buf[50];
 unsigned int raw = 0;
 float volt = 0.0;
 
-const char* wifi_ssid = "MYWLAN_GAST";
-const char* wifi_password = "WLANGAST";
-const char* deviceName = "accudurationtest1";
+String wifi_ssid;
+String wifi_password;
+String deviceName;
+String mqtt_user;
+String mqtt_password;
+String MQTT_BROKER;
+String TOPIC_ROOT;
+int MQTT_PORT;
 
 int channel;  // 1 byte,   5 in total
 byte bssid[6]; // 6 bytes, 11 in total
 
-const char* mqtt_user = "weather1";
-const char* mqtt_password = "transportdata";
-const char* MQTT_BROKER = "192.168.2.101";
-const int MQTT_PORT = 1883;
-const String topics[] = {"weather/weather2/BMP280/Voltage", "weather/weather2/BMP280/Temperature", "weather/weather2/BMP280/Humidity", "weather/weather2/BMP280/Pressure", "weather/weather2/BMP280/AltitudeMeter", "weather/weather2/BMP280/DewPoint"};
+
+const String topics[] = {"/BMP280/Voltage", "/BMP280/Temperature", "/BMP280/Humidity", "/BMP280/Pressure", "/BMP280/AltitudeMeter", "/BMP280/DewPoint"};
 
 /*
   topics
@@ -42,9 +44,6 @@ const String topics[] = {"weather/weather2/BMP280/Voltage", "weather/weather2/BM
 WiFiClient wifiClient;
 Ticker flipper;
 long blink_count;
-void callback(char* topic, byte* payload, unsigned int length) {
-  // handle message arrived
-}
 
 float calc_dewpoint(unsigned int h , int t)
 {
@@ -121,11 +120,18 @@ void connect_wifi() {
   Serial.println(WiFi.localIP());
 }
 
-PubSubClient mqttclient(MQTT_BROKER, MQTT_PORT, callback, wifiClient);
+PubSubClient mqttclient(wifiClient);
 
 void connect_mqtt() {
+//  mqttclient;
+//(MQTT_BROKER.c_str(), MQTT_PORT, callback, wifiClient);
   int count_round = 0;
-  while (! mqttclient.connect(deviceName, mqtt_user, mqtt_password) && count_round < 100)
+  mqttclient.setServer(MQTT_BROKER.c_str(), MQTT_PORT);
+  Serial.println(MQTT_BROKER);
+  Serial.println(deviceName);
+  Serial.println(mqtt_user);
+  Serial.println(mqtt_password);
+  while (! mqttclient.connect((char*)deviceName.c_str(), (char*)mqtt_user.c_str(), (char*)mqtt_password.c_str()) && count_round < 100)
   {
     Serial.println("retry mqtt connect");
     delay(500);
@@ -135,6 +141,7 @@ void connect_mqtt() {
 
 void send_mqtt() {
   int a = 0;
+  String topic;
   Serial.println("enter send_mqtt");
   for ( int i = 0 ; i < 6 ; i++)
   {
@@ -168,7 +175,8 @@ void send_mqtt() {
       default:
         buf[0] = '\n';
     }
-    mqttclient.publish(topics[i].c_str(), buf);
+    topic=TOPIC_ROOT+topics[i];
+    mqttclient.publish(topic.c_str(), buf);
   }
   Serial.println("leave send_mqtt");
 }
@@ -201,6 +209,29 @@ void setup() {
   int count_round = 0;
   Serial.begin(74880); // Aufbau einer seriellen Verbindung
   Serial.setTimeout(2000);
+  //read the config values
+  //const char* wifi_ssid = "MYWLAN_GAST";
+  //const char* wifi_password = "WLANGAST";
+//const char* deviceName = "accudurationtest1";
+//const char* mqtt_user = "weather1";
+//const char* mqtt_password = "transportdata";
+//const char* MQTT_BROKER = "192.168.2.101";
+//const int MQTT_PORT = 1883;
+  wifi_ssid=CONFIG.getConfigValue("wifi_ssid");
+  wifi_password=CONFIG.getConfigValue("wifi_password");
+  deviceName=CONFIG.getConfigValue("deviceName");
+  mqtt_user=CONFIG.getConfigValue("mqtt_user");
+  mqtt_password=CONFIG.getConfigValue("mqtt_password");
+  MQTT_BROKER=CONFIG.getConfigValue("MQTT_BROKER");
+  MQTT_PORT=CONFIG.getConfigValue("MQTT_PORT").toInt();
+  TOPIC_ROOT=CONFIG.getConfigValue("TOPIC_ROOT");
+
+  /* just for testing without hardware
+  connect_wifi();
+  connect_mqtt();
+  send_mqtt();
+  */
+  
   while (!Serial) {};
   //init led
   pinMode(LED_BUILTIN, OUTPUT);
