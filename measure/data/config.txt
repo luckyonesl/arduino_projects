@@ -1,0 +1,8 @@
+wifi_ssid=
+wifi_password=
+deviceName=
+mqtt_user=
+mqtt_password=
+MQTT_BROKER=
+MQTT_PORT=
+
