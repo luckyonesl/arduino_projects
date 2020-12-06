@@ -5,4 +5,4 @@ mqtt_user=
 mqtt_password=
 MQTT_BROKER=
 MQTT_PORT=
-
+TOPIC_ROOT=
