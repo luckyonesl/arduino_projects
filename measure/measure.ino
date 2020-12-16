@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "ConfigReader.h"
 #include <ESP8266WiFi.h>
+//https://github.com/tsi-software/Secure_ESP8266_MQTT_poc/blob/master/top-level-components/secure_esp8266_mqtt_client/SetupWifi.h
 #include <PubSubClient.h>
 #include <RTCVars.h>
 #include <Ticker.h>
@@ -61,6 +62,7 @@ int get_powerstate() {
   volt = raw / 1023.0;
   volt = volt * 4.2;
   Serial.println(String(volt));
+
   if ( volt > 3.6 )
   {
     powerstate = 0;
@@ -80,9 +82,14 @@ int get_powerstate() {
   return powerstate;
 }
 
-void connect_wifi() {
+bool connect_wifi() {
+  bool retval = false;
   int count_round = 0;
-  if (WiFi.status() != WL_CONNECTED)
+  int wifi_status=0;
+
+  WiFi.mode(WIFI_STA);
+  wifi_status=WiFi.status();
+  if ( wifi_status != WL_CONNECTED)
   {
     WiFi.hostname(deviceName);
     //WiFi.config(staticIP, subnet, gateway, dns);
@@ -96,20 +103,24 @@ void connect_wifi() {
       Serial.println("use ssid / password / channel / bssid");
       WiFi.begin(wifi_ssid, wifi_password, channel, bssid, true);
     }
-    WiFi.mode(WIFI_STA);
-    wifi_set_sleep_type(NONE_SLEEP_T);
+    delay(10000);
+    //WiFi.mode(WIFI_STA);
+    //wifi_set_sleep_type(NONE_SLEEP_T);
   }
-  while (WiFi.status() != WL_CONNECTED && count_round < 100)
+  while (wifi_status != WL_CONNECTED && count_round <= 100)
   {
+    wifi_status=WiFi.status();
     count_round++;
-    if ( count_round > 99 )
+    if ( count_round >= 99 )
     {
       bssid[0] = 0;
       Serial.println("start with a network scan");
       WiFi.disconnect();
     }
-    delay(500);
+    delay(1000);
+    blink_now(0.2, 10);
     Serial.println("wait for wifi");
+    Serial.println(wifi_status);
   }
   if ( bssid[0] == 0 && WiFi.status() == WL_CONNECTED )
   {
@@ -117,14 +128,19 @@ void connect_wifi() {
     memcpy( bssid, WiFi.BSSID(), 6 );
     channel = WiFi.channel();
   }
+  if ( WiFi.status() == WL_CONNECTED )
+  {
+    retval = true;
+  }
   Serial.println(WiFi.localIP());
+  return retval;
 }
 
 PubSubClient mqttclient(wifiClient);
 
 void connect_mqtt() {
-//  mqttclient;
-//(MQTT_BROKER.c_str(), MQTT_PORT, callback, wifiClient);
+  //  mqttclient;
+  //(MQTT_BROKER.c_str(), MQTT_PORT, callback, wifiClient);
   int count_round = 0;
   mqttclient.setServer(MQTT_BROKER.c_str(), MQTT_PORT);
   Serial.println(MQTT_BROKER);
@@ -175,7 +191,7 @@ void send_mqtt() {
       default:
         buf[0] = '\n';
     }
-    topic=TOPIC_ROOT+topics[i];
+    topic = TOPIC_ROOT + topics[i];
     mqttclient.publish(topic.c_str(), buf);
   }
   Serial.println("leave send_mqtt");
@@ -210,32 +226,26 @@ void setup() {
   Serial.begin(74880); // Aufbau einer seriellen Verbindung
   Serial.setTimeout(2000);
   //read the config values
-  //const char* wifi_ssid = "MYWLAN_GAST";
-  //const char* wifi_password = "WLANGAST";
-//const char* deviceName = "accudurationtest1";
-//const char* mqtt_user = "weather1";
-//const char* mqtt_password = "transportdata";
-//const char* MQTT_BROKER = "192.168.2.101";
-//const int MQTT_PORT = 1883;
-  wifi_ssid=CONFIG.getConfigValue("wifi_ssid");
-  wifi_password=CONFIG.getConfigValue("wifi_password");
-  deviceName=CONFIG.getConfigValue("deviceName");
-  mqtt_user=CONFIG.getConfigValue("mqtt_user");
-  mqtt_password=CONFIG.getConfigValue("mqtt_password");
-  MQTT_BROKER=CONFIG.getConfigValue("MQTT_BROKER");
-  MQTT_PORT=CONFIG.getConfigValue("MQTT_PORT").toInt();
-  TOPIC_ROOT=CONFIG.getConfigValue("TOPIC_ROOT");
+  wifi_ssid = CONFIG.getConfigValue("wifi_ssid");
+  wifi_password = CONFIG.getConfigValue("wifi_password");
+  deviceName = CONFIG.getConfigValue("deviceName");
+  mqtt_user = CONFIG.getConfigValue("mqtt_user");
+  mqtt_password = CONFIG.getConfigValue("mqtt_password");
+  MQTT_BROKER = CONFIG.getConfigValue("MQTT_BROKER");
+  MQTT_PORT = CONFIG.getConfigValue("MQTT_PORT").toInt();
+  TOPIC_ROOT = CONFIG.getConfigValue("TOPIC_ROOT");
 
   /* just for testing without hardware
-  connect_wifi();
-  connect_mqtt();
-  send_mqtt();
+    connect_wifi();
+    connect_mqtt();
+    send_mqtt();
   */
-  
+
   while (!Serial) {};
   //init led
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
+  blink_now(0.2, 1);
   //useless pinMode(D0, WAKEUP_PULLUP);
   //init port for read
   pinMode(A0, INPUT);
@@ -288,9 +298,11 @@ void loop() {
     case 0:
       Serial.println("powerstate 0");
       //state.debugOutputRTCVars();
-      connect_wifi();
-      connect_mqtt();
-      send_mqtt();
+      if ( connect_wifi() ) 
+      {
+        connect_mqtt();
+        send_mqtt();
+      }
       //blink_now(0.7, 10);
       //wifi + mqtt!
       mqttclient.disconnect();
@@ -307,9 +319,11 @@ void loop() {
       break;
     case 1:
       Serial.println("powerstate 1 deep sleep deepSleepMax/2");
-      connect_wifi();
-      connect_mqtt();
-      send_mqtt();
+      if ( connect_wifi() ) 
+      {
+        connect_mqtt();
+        send_mqtt();
+      }
       //blink_now(0.5, 10);
       mqttclient.disconnect();
       delay(500);
