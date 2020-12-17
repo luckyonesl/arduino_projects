@@ -78,7 +78,12 @@ int get_powerstate() {
     powerstate = 2;
     Serial.println("deep sleep max");
   }
-  //3 is missing
+  if ( volt < 1 )
+  {
+    Serial.println("no bat keep state 0");
+    powerstate=0;    
+  }
+  //3 is missing  
   return powerstate;
 }
 
@@ -86,12 +91,12 @@ bool connect_wifi() {
   bool retval = false;
   int count_round = 0;
   int wifi_status=0;
-
+  WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
+  WiFi.hostname(deviceName);
   wifi_status=WiFi.status();
   if ( wifi_status != WL_CONNECTED)
   {
-    WiFi.hostname(deviceName);
     //WiFi.config(staticIP, subnet, gateway, dns);
     if ( bssid[0] == 0 )
     {
@@ -107,20 +112,23 @@ bool connect_wifi() {
     //WiFi.mode(WIFI_STA);
     //wifi_set_sleep_type(NONE_SLEEP_T);
   }
-  while (wifi_status != WL_CONNECTED && count_round <= 100)
+  while (wifi_status != WL_CONNECTED && count_round <= 40)
   {
     wifi_status=WiFi.status();
     count_round++;
-    if ( count_round >= 99 )
+    if ( count_round >= 39 )
     {
       bssid[0] = 0;
+      //save to rtc
+      state.saveToRTC();
       Serial.println("start with a network scan");
       WiFi.disconnect();
+      //restart
+      ESP.restart();
     }
-    delay(1000);
-    blink_now(0.2, 10);
-    Serial.println("wait for wifi");
-    Serial.println(wifi_status);
+    delay(500);
+    //blink_now(0.2, 10);
+    Serial.print(".");
   }
   if ( bssid[0] == 0 && WiFi.status() == WL_CONNECTED )
   {
@@ -225,6 +233,7 @@ void setup() {
   int count_round = 0;
   Serial.begin(74880); // Aufbau einer seriellen Verbindung
   Serial.setTimeout(2000);
+  //debugging via code  Serial.setDebugOutput(true);
   //read the config values
   wifi_ssid = CONFIG.getConfigValue("wifi_ssid");
   wifi_password = CONFIG.getConfigValue("wifi_password");
