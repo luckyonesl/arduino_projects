@@ -91,14 +91,16 @@ bool connect_wifi() {
   bool retval = false;
   int count_round = 0;
   int wifi_status=0;
+  int maxround=200;
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
   WiFi.hostname(deviceName);
+  delay(500);
   wifi_status=WiFi.status();
   if ( wifi_status != WL_CONNECTED)
   {
     //WiFi.config(staticIP, subnet, gateway, dns);
-    if ( bssid[0] == 0 )
+    if ( channel == -1 )
     {
       Serial.println("use ssid / password ");
       WiFi.begin(wifi_ssid, wifi_password);
@@ -108,21 +110,22 @@ bool connect_wifi() {
       Serial.println("use ssid / password / channel / bssid");
       WiFi.begin(wifi_ssid, wifi_password, channel, bssid, true);
     }
-    delay(10000);
+    delay(500);
     //WiFi.mode(WIFI_STA);
     //wifi_set_sleep_type(NONE_SLEEP_T);
   }
-  while (wifi_status != WL_CONNECTED && count_round <= 40)
+  while (wifi_status != WL_CONNECTED && count_round <= maxround)
   {
     wifi_status=WiFi.status();
     count_round++;
-    if ( count_round >= 39 )
+    if ( count_round >= ( maxround - 1 ) )
     {
-      bssid[0] = 0;
+      channel = -1;
       //save to rtc
       state.saveToRTC();
-      Serial.println("start with a network scan");
+      Serial.println("start with a network scan next time");
       WiFi.disconnect();
+      delay(50000);
       //restart
       ESP.restart();
     }
