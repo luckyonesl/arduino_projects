@@ -1,3 +1,3 @@
-#easyexample
+#az-envy
 
-the intention is to blink with the internal led on an esp8266
+this project is using the az sensor it transfer the data to an mqtt server
