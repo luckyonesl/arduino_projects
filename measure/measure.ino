@@ -15,8 +15,7 @@ BlueDot_BME280 bme280 = BlueDot_BME280();
 RTCVars state; // create the state object
 
 char buf[50];
-unsigned int raw = 0;
-float volt = 0.0;
+
 
 String wifi_ssid;
 String wifi_password;
@@ -31,7 +30,8 @@ unsigned long start_wifi;
 
 int channel;  // 1 byte,   5 in total
 byte bssid[6]; // 6 bytes, 11 in total
-int powerstate=0;
+int powerstate;
+float volt;
 
 const String topics[] = {"/BMP280/Voltage", "/BMP280/Temperature", "/BMP280/Humidity", "/BMP280/Pressure", "/BMP280/AltitudeMeter", "/BMP280/DewPoint"};
 
@@ -57,38 +57,7 @@ void led_signal()
   digitalWrite(LED_BUILTIN, !state);     // set pin to the opposite state
 }
 
-int get_powerstate() {
-  int powerstate;
-  //0 no save 1 switch off wifi 2 sleep 3 dep stande by
-  //pin is set
-  raw = analogRead(A0);
-  volt = raw / 1023.0;
-  volt = volt * 4.2;
-  Serial.println(String(volt));
 
-  if ( volt < 1 )
-  {
-    Serial.println("no bat keep state 0");
-    powerstate=0;    
-  }
-  if ( volt > 3.6 )
-  {
-    powerstate = 0;
-    Serial.println(" online");
-  }
-  if ( volt <= 3.6 && volt > 3.4 )
-  {
-    powerstate = 1;
-    Serial.println(" online but switch of wifi");
-  }
-  if ( volt <= 3.4 && volt > 1)
-  {
-    powerstate = 2;
-    Serial.println("deep sleep max");
-  }
-  //3 is missing  
-  return powerstate;
-}
 
 PubSubClient mqttclient(wifiClient);
 
@@ -166,25 +135,21 @@ void setup() {
   MQTT_PORT = CONFIG.getConfigValue("MQTT_PORT").toInt();
   TOPIC_ROOT = CONFIG.getConfigValue("TOPIC_ROOT");
   start_wifi = millis();
+  while (!Serial) {};
   //wifi should only be called if not powerstate 2
+  powerstate=get_powerstate();
+  Serial.print("powerstate is ");
+  Serial.println(powerstate);
   if ( powerstate < 2 )
   {
+    Serial.println("establish wifi");
     wifi_establish_connection(wifi_ssid, wifi_password, deviceName);
   }
-
-  /* just for testing without hardware
-    connect_wifi();
-    connect_mqtt();
-    send_mqtt();
-  */
-
-  while (!Serial) {};
   //init led
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-  //useless pinMode(D0, WAKEUP_PULLUP);
-  //init port for read
-  pinMode(A0, INPUT);
+
+  volt=getBatteryVoltage();
   //0 is I2C
   bme280.parameter.communication = 0;
   bme280.parameter.I2CAddress = 0x76;                  //Choose I2C Address
@@ -214,7 +179,6 @@ void setup() {
   }
   // Wait for serial to initialize.
   while (!Serial) {};
-  powerstate=get_powerstate();
   state.registerVar( &volt );
   state.registerVar( &channel );
   state.registerVar( &powerstate );
@@ -228,10 +192,14 @@ void setup() {
     Serial.println("This seems to be a cold boot. We don't have a valid state on RTC memory");
   }
   state.saveToRTC();
-
+  Serial.println("leave setup");
 }
 
 void loop() {
+  long bme280wait;
+  int pwst=get_powerstate();
+
+  //Serial.println("enter loop");
   if ( ! wifi_is_connected() )
   {
     if ( ( start_wifi + 100000 ) < millis() )
@@ -246,7 +214,10 @@ void loop() {
       timer_is_attached=true;
     }
     //in case of powerstate 2 deepsleep
-    if ( powerstate == 2 ) { ESP.deepSleep(ESP.deepSleepMax()); }
+    //Serial.print ("powerstate is ");
+    //Serial.println(pwst);
+    if ( pwst == 2 ) { ESP.deepSleep(ESP.deepSleepMax()); }
+    Serial.print(".");
     delay(300);
     return;
   }
@@ -261,6 +232,13 @@ void loop() {
       //switch of blinking
       digitalWrite(LED_BUILTIN, HIGH);  
     }  
+  }
+  bme280wait=(start_wifi + 20000 ) - millis();
+  if ( bme280wait > 0 )
+  {
+    for bme280 to get reasonable values
+    Serial.print("wait for ");Serial.println(bme280wait);
+    delay(bme280wait);
   }
   switch ( powerstate ) {
     case 0:

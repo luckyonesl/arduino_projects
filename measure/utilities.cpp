@@ -63,7 +63,7 @@ bool wifi_establish_connection( String wifi_ssid,String wifi_password, String de
 {
   bool retval = true;
   WiFi.persistent(false);
-  WiFi.disconnect(true);
+  // only if we want.. is part of tear down WiFi.disconnect(true);
   WiFi.mode(WIFI_STA);
   WiFi.onEvent(WiFiEventHndl);  
   WiFi.hostname(deviceName);
@@ -78,4 +78,47 @@ float calc_dewpoint(unsigned int h , int t)
   H = (log10(h) - 2.0) / 0.4343 + (17.62 * t) / (243.12 + t);
   dew_point = 243.12 * H / (17.62 - H);
   return dew_point;
+}
+
+float getBatteryVoltage()
+{
+  unsigned int raw = 0;
+  float volt = 0.0;  
+  //init port for read
+  pinMode(A0, INPUT);
+  raw = analogRead(A0);
+  volt = raw / 1023.0;
+  volt = volt * 4.2;
+  //Serial.print("Voltage is ");
+  //Serial.println(volt);
+  return volt;
+}
+
+int get_powerstate() {
+  int pwst;
+  float volt=getBatteryVoltage();
+  //0 no save 1 switch off wifi 2 sleep 3 dep stande by
+  //pin is set
+  if ( volt < 1 )
+  {
+    //Serial.println("no bat keep state 0");
+    pwst = 0;    
+  }
+  if ( volt > 3.6 )
+  {
+    pwst = 0;
+    //Serial.println("state 0, online");
+  }
+  if ( volt <= 3.6 && volt > 3.4 )
+  {
+    pwst = 1;
+    //Serial.println("state 1, online but switch of wifi");
+  }
+  if ( volt <= 3.4 && volt > 1)
+  {
+    pwst = 2;
+    //Serial.println("state 2, deep sleep max");
+  }
+  //3 is missing  
+  return pwst;
 }
