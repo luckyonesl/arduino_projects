@@ -59,6 +59,13 @@ void wifi_teardown_rst(int max,int* curval)
   delay(1000);
 }
 
+void wifi_teardown_rst()
+{
+  wifi_teardown();
+  delay(5000);
+  ESP.reset();
+}
+
 bool wifi_establish_connection( String wifi_ssid,String wifi_password, String deviceName)
 {
   bool retval = true;

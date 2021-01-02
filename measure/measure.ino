@@ -205,8 +205,7 @@ void loop() {
     if ( ( start_wifi + 100000 ) < millis() )
     {
       Serial.println("got no wifi connection reset now");
-      wifi_teardown();
-      ESP.reset();
+      wifi_teardown_rst();
     }
     if ( ! timer_is_attached )
     {
@@ -236,7 +235,7 @@ void loop() {
   bme280wait=(start_wifi + 20000 ) - millis();
   if ( bme280wait > 0 )
   {
-    for bme280 to get reasonable values
+    //for bme280 to get reasonable values
     Serial.print("wait for ");Serial.println(bme280wait);
     delay(bme280wait);
   }
@@ -249,15 +248,11 @@ void loop() {
         connect_mqtt();
         send_mqtt();
       }
-      //blink_now(0.7, 10);
-      //wifi + mqtt!
       mqttclient.disconnect();
       wifi_teardown();
       delay(500);
       Serial.flush();
       Serial.end();
-      //blink_now(0.2,20);
-      //10 min
       ESP.deepSleep(300e6);
       //ESP.deepSleep(30e6);
       break;
@@ -274,7 +269,6 @@ void loop() {
       delay(500);
       Serial.flush();
       Serial.end();
-      //blink_now(0.2,20);
       ESP.deepSleep((ESP.deepSleepMax() / 2));
       break;
     case 2:
@@ -289,7 +283,6 @@ void loop() {
       //ESP.deepSleep(ESP.deepSleepMax());
       Serial.flush();
       Serial.end();
-      //blink_now(0.2,20);
       ESP.deepSleep(ESP.deepSleepMax());
       break;
   }
