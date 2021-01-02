@@ -7,6 +7,7 @@
 #include <RTCVars.h>
 #include <Ticker.h>
 #include "BlueDot_BME280.h"
+#include "utilities.h"
 
 ConfigReader CONFIG("/config.txt");
 
@@ -25,10 +26,12 @@ String mqtt_password;
 String MQTT_BROKER;
 String TOPIC_ROOT;
 int MQTT_PORT;
+bool timer_is_attached=false;
+unsigned long start_wifi;
 
 int channel;  // 1 byte,   5 in total
 byte bssid[6]; // 6 bytes, 11 in total
-
+int powerstate=0;
 
 const String topics[] = {"/BMP280/Voltage", "/BMP280/Temperature", "/BMP280/Humidity", "/BMP280/Pressure", "/BMP280/AltitudeMeter", "/BMP280/DewPoint"};
 
@@ -43,15 +46,15 @@ const String topics[] = {"/BMP280/Voltage", "/BMP280/Temperature", "/BMP280/Humi
 */
 
 WiFiClient wifiClient;
-Ticker flipper;
+Ticker no_wifi_ticker_signal;
 long blink_count;
 
-float calc_dewpoint(unsigned int h , int t)
+void led_signal()
 {
-  float H, dew_point;
-  H = (log10(h) - 2.0) / 0.4343 + (17.62 * t) / (243.12 + t);
-  dew_point = 243.12 * H / (17.62 - H);
-  return dew_point;
+  //Serial.println("led_signal");
+  //led signals send
+  int state = digitalRead(LED_BUILTIN);  // get the current state of GPIO1 pin
+  digitalWrite(LED_BUILTIN, !state);     // set pin to the opposite state
 }
 
 int get_powerstate() {
@@ -63,6 +66,11 @@ int get_powerstate() {
   volt = volt * 4.2;
   Serial.println(String(volt));
 
+  if ( volt < 1 )
+  {
+    Serial.println("no bat keep state 0");
+    powerstate=0;    
+  }
   if ( volt > 3.6 )
   {
     powerstate = 0;
@@ -73,78 +81,13 @@ int get_powerstate() {
     powerstate = 1;
     Serial.println(" online but switch of wifi");
   }
-  if ( volt <= 3.4 )
+  if ( volt <= 3.4 && volt > 1)
   {
     powerstate = 2;
     Serial.println("deep sleep max");
   }
-  if ( volt < 1 )
-  {
-    Serial.println("no bat keep state 0");
-    powerstate=0;    
-  }
   //3 is missing  
   return powerstate;
-}
-
-bool connect_wifi() {
-  bool retval = false;
-  int count_round = 0;
-  int wifi_status=0;
-  int maxround=200;
-  WiFi.persistent(false);
-  WiFi.mode(WIFI_STA);
-  WiFi.hostname(deviceName);
-  delay(500);
-  wifi_status=WiFi.status();
-  if ( wifi_status != WL_CONNECTED)
-  {
-    //WiFi.config(staticIP, subnet, gateway, dns);
-    if ( channel == -1 )
-    {
-      Serial.println("use ssid / password ");
-      WiFi.begin(wifi_ssid, wifi_password);
-    }
-    else
-    {
-      Serial.println("use ssid / password / channel / bssid");
-      WiFi.begin(wifi_ssid, wifi_password, channel, bssid, true);
-    }
-    delay(500);
-    //WiFi.mode(WIFI_STA);
-    //wifi_set_sleep_type(NONE_SLEEP_T);
-  }
-  while (wifi_status != WL_CONNECTED && count_round <= maxround)
-  {
-    wifi_status=WiFi.status();
-    count_round++;
-    if ( count_round >= ( maxround - 1 ) )
-    {
-      channel = -1;
-      //save to rtc
-      state.saveToRTC();
-      Serial.println("start with a network scan next time");
-      WiFi.disconnect();
-      delay(50000);
-      //restart
-      ESP.restart();
-    }
-    delay(500);
-    //blink_now(0.2, 10);
-    Serial.print(".");
-  }
-  if ( bssid[0] == 0 && WiFi.status() == WL_CONNECTED )
-  {
-    Serial.println("copy bssid and channel once to RTC");
-    memcpy( bssid, WiFi.BSSID(), 6 );
-    channel = WiFi.channel();
-  }
-  if ( WiFi.status() == WL_CONNECTED )
-  {
-    retval = true;
-  }
-  Serial.println(WiFi.localIP());
-  return retval;
 }
 
 PubSubClient mqttclient(wifiClient);
@@ -208,30 +151,6 @@ void send_mqtt() {
   Serial.println("leave send_mqtt");
 }
 
-void flip()
-{
-  int state = digitalRead(LED_BUILTIN);  // get the current state of GPIO1 pin
-  digitalWrite(LED_BUILTIN, !state);     // set pin to the opposite state
-  if ( blink_count <= 0 )
-  {
-    flipper.detach();
-    digitalWrite(LED_BUILTIN, HIGH);
-  }
-  blink_count--;
-}
-
-void blink_now(float interval, int count )
-{
-  blink_count = count;
-  flipper.attach(interval, flip);
-  while (blink_count > 0)
-  {
-    delay(5000);
-    Serial.println(blink_count);
-  }
-}
-
-
 void setup() {
   int count_round = 0;
   Serial.begin(74880); // Aufbau einer seriellen Verbindung
@@ -246,6 +165,12 @@ void setup() {
   MQTT_BROKER = CONFIG.getConfigValue("MQTT_BROKER");
   MQTT_PORT = CONFIG.getConfigValue("MQTT_PORT").toInt();
   TOPIC_ROOT = CONFIG.getConfigValue("TOPIC_ROOT");
+  start_wifi = millis();
+  //wifi should only be called if not powerstate 2
+  if ( powerstate < 2 )
+  {
+    wifi_establish_connection(wifi_ssid, wifi_password, deviceName);
+  }
 
   /* just for testing without hardware
     connect_wifi();
@@ -257,7 +182,6 @@ void setup() {
   //init led
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-  blink_now(0.2, 1);
   //useless pinMode(D0, WAKEUP_PULLUP);
   //init port for read
   pinMode(A0, INPUT);
@@ -290,8 +214,10 @@ void setup() {
   }
   // Wait for serial to initialize.
   while (!Serial) {};
+  powerstate=get_powerstate();
   state.registerVar( &volt );
   state.registerVar( &channel );
+  state.registerVar( &powerstate );
   state.registerVar( bssid );
   if (state.loadFromRTC()) {            // we load the values from rtc memory back into the registered variables
     Serial.println("push reset or back from deep sleep");
@@ -306,11 +232,41 @@ void setup() {
 }
 
 void loop() {
-  switch ( get_powerstate() ) {
+  if ( ! wifi_is_connected() )
+  {
+    if ( ( start_wifi + 100000 ) < millis() )
+    {
+      Serial.println("got no wifi connection reset now");
+      wifi_teardown();
+      ESP.reset();
+    }
+    if ( ! timer_is_attached )
+    {
+      no_wifi_ticker_signal.attach(1,led_signal);  
+      timer_is_attached=true;
+    }
+    //in case of powerstate 2 deepsleep
+    if ( powerstate == 2 ) { ESP.deepSleep(ESP.deepSleepMax()); }
+    delay(300);
+    return;
+  }
+  else
+  {
+    //deatach led signal
+    if ( timer_is_attached == true )
+    {
+      no_wifi_ticker_signal.detach(); 
+      timer_is_attached=false;
+      delay(300);
+      //switch of blinking
+      digitalWrite(LED_BUILTIN, HIGH);  
+    }  
+  }
+  switch ( powerstate ) {
     case 0:
       Serial.println("powerstate 0");
       //state.debugOutputRTCVars();
-      if ( connect_wifi() ) 
+      if ( wifi_is_connected() ) 
       {
         connect_mqtt();
         send_mqtt();
@@ -318,10 +274,8 @@ void loop() {
       //blink_now(0.7, 10);
       //wifi + mqtt!
       mqttclient.disconnect();
+      wifi_teardown();
       delay(500);
-      WiFi.disconnect();
-      WiFi.forceSleepBegin();
-      delay(1);
       Serial.flush();
       Serial.end();
       //blink_now(0.2,20);
@@ -331,17 +285,15 @@ void loop() {
       break;
     case 1:
       Serial.println("powerstate 1 deep sleep deepSleepMax/2");
-      if ( connect_wifi() ) 
+      if ( wifi_is_connected() ) 
       {
         connect_mqtt();
         send_mqtt();
       }
       //blink_now(0.5, 10);
       mqttclient.disconnect();
+      wifi_teardown();
       delay(500);
-      WiFi.disconnect();
-      WiFi.forceSleepBegin();
-      delay(1);
       Serial.flush();
       Serial.end();
       //blink_now(0.2,20);
@@ -350,12 +302,11 @@ void loop() {
     case 2:
       Serial.println("powerstate 2 deep sleep deepSleepMax!");
       mqttclient.disconnect();
+      wifi_teardown();
       delay(500);
-      WiFi.disconnect();
-      WiFi.forceSleepBegin();
       //Serial.println("should be a deep sleep implementation");
       // Deep sleep mode for 30 seconds, the ESP8266 wakes up by itself when GPIO 16 (D0 in NodeMCU board) is connected to the RESET pin
-      //connect GPIO 16 (D0) to RST 330 – 1kΩ between D0
+      //connect GPIO 16 (D0) to RST 330 – 1kΩ between D0 in case of wemos mini with Schottky-Diode
       Serial.println("deep sleep max");
       //ESP.deepSleep(ESP.deepSleepMax());
       Serial.flush();
