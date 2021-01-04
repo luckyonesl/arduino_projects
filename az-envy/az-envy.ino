@@ -72,6 +72,7 @@ void loop() {
   String topic;
   char buf[50];
   float* values;
+  float  tmp_res;
   
   Serial.println(F("enter loop"));
   values=SensorMQ2.read(false);
@@ -139,7 +140,10 @@ void loop() {
           dtostrf(SensorSHT3x.GetRelHumidity(), 8, 2, buf);
           break; 
         case 4:
-          dtostrf(SensorSHT3x.GetTemperature(SHT3x::Cel), 8, 2, buf);
+          //4 to much
+          tmp_res=SensorSHT3x.GetTemperature(SHT3x::Cel);
+          tmp_res+=-4;
+          dtostrf(tmp_res, 8, 2, buf);
           break; 
       }
       mqttclient.publish(topic.c_str(), buf);
@@ -147,5 +151,6 @@ void loop() {
 
   }
   mqttclient.disconnect();
- 
+  //only every 10 seconds
+  delay(10000); 
 }
