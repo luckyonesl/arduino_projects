@@ -4,5 +4,5 @@ ArduinoPipeline {
    //enter project name
     ProjectName = 'measure'
     fqbn = 'esp8266:esp8266:d1_mini_pro'
-   
+    PackerArchVersion = 'esp8266:esp8266'
 }
