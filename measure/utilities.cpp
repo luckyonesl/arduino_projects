@@ -90,15 +90,15 @@ float calc_dewpoint(unsigned int h , int t)
 float getBatteryVoltage()
 {
   unsigned int raw = 0;
-  float volt = 0.0;  
+  float myvolt = 0.0;  
   //init port for read
   pinMode(A0, INPUT);
   raw = analogRead(A0);
-  volt = raw / 1023.0;
-  volt = volt * 4.2;
+  myvolt = raw / 1023.0;
+  myvolt = myvolt * 4.2;
   //Serial.print("Voltage is ");
   //Serial.println(volt);
-  return volt;
+  return myvolt;
 }
 
 int get_powerstate() {
