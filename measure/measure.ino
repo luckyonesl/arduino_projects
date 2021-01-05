@@ -89,6 +89,7 @@ void send_mqtt() {
     {
       case 0:
         //0->Voltage
+        volt=getBatteryVoltage();
         dtostrf(volt, 8, 2, buf);
         break;
       case 1:
