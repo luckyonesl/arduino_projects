@@ -89,7 +89,6 @@ void send_mqtt() {
     {
       case 0:
         //0->Voltage
-        volt=getBatteryVoltage();
         dtostrf(volt, 8, 2, buf);
         break;
       case 1:
@@ -149,8 +148,6 @@ void setup() {
   //init led
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-
-  volt=getBatteryVoltage();
   //0 is I2C
   bme280.parameter.communication = 0;
   bme280.parameter.I2CAddress = 0x76;                  //Choose I2C Address
@@ -192,6 +189,8 @@ void setup() {
   {
     Serial.println("This seems to be a cold boot. We don't have a valid state on RTC memory");
   }
+  //refresh volt in any case
+  volt=getBatteryVoltage();
   state.saveToRTC();
   Serial.println("leave setup");
 }
@@ -200,9 +199,12 @@ void loop() {
   long bme280wait;
   int pwst=get_powerstate();
 
+  //nothing then deep sleep in case
+  if ( pwst == 2 ) { ESP.deepSleep(ESP.deepSleepMax()); }
+
   //Serial.println("enter loop");
   if ( ! wifi_is_connected() )
-  {
+  {    
     if ( ( start_wifi + 100000 ) < millis() )
     {
       Serial.println("got no wifi connection reset now");
@@ -212,11 +214,7 @@ void loop() {
     {
       no_wifi_ticker_signal.attach(1,led_signal);  
       timer_is_attached=true;
-    }
-    //in case of powerstate 2 deepsleep
-    //Serial.print ("powerstate is ");
-    //Serial.println(pwst);
-    if ( pwst == 2 ) { ESP.deepSleep(ESP.deepSleepMax()); }
+    } 
     Serial.print(".");
     delay(300);
     return;
@@ -240,7 +238,7 @@ void loop() {
     Serial.print("wait for ");Serial.println(bme280wait);
     delay(bme280wait);
   }
-  switch ( powerstate ) {
+  switch ( pwst ) {
     case 0:
       Serial.println("powerstate 0");
       //state.debugOutputRTCVars();
@@ -255,7 +253,7 @@ void loop() {
       Serial.flush();
       Serial.end();
       ESP.deepSleep(300e6);
-      //ESP.deepSleep(30e6);
+      //ESP.deepSleep(10e6);
       break;
     case 1:
       Serial.println("powerstate 1 deep sleep deepSleepMax/2");

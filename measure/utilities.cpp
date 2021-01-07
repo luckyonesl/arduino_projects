@@ -97,7 +97,7 @@ float getBatteryVoltage()
   myvolt = raw / 1023.0;
   myvolt = myvolt * 4.2;
   //Serial.print("Voltage is ");
-  //Serial.println(volt);
+  //Serial.println(myvolt);
   return myvolt;
 }
 
