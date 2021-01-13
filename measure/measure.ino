@@ -252,6 +252,7 @@ void loop() {
       delay(500);
       Serial.flush();
       Serial.end();
+      //is us => * 1000000
       ESP.deepSleep(300e6);
       //ESP.deepSleep(10e6);
       break;
