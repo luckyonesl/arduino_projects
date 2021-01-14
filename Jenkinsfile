@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-@Library('jenkins-shared-lib@master') _
+@Library('jenkins-shared-lib@develop') _
 ArduinoPipeline {
    //enter project name
     ProjectName = 'az-envy'
