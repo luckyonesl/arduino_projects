@@ -18,6 +18,19 @@ pipeline {
                stash includes: '**/*.bin', name: 'arduino'
             }
       }
+      stage('LINT') {
+            agent {
+               docker { 
+                  image 'cicd_arduinocli:latest'
+                  args "--entrypoint=''"
+               }
+            }
+            steps {
+               sh label: 'arduino copy board', returnStatus: true, script: 'cp -r /home/jenkins-slave/Arduino .'
+               sh label: 'arduino copy libs', returnStatus: true, script: 'cp -r  /home/jenkins-slave/.arduino15 .'
+               sh label: 'arduino', returnStatus: true, script: '/usr/local/arduino-cli/arduino-lint --build-path ${WORKSPACE}/target/result.log" easyexample3'
+            }
+      }
       stage('FLASH'){
          agent { label 'ARM' }
             steps {
